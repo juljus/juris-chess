@@ -1,0 +1,35 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../lib/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Game {
+  id               Int      @id @default(autoincrement())
+  boardNumber      Int      @unique // 1 or 2
+  fen              String   @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  grandfatherColor String   // "white" or "black"
+  status           String   @default("playing") // "playing", "checkmate", "draw"
+  winner           String?  // "grandfather", "opponent", or null for draw/ongoing
+  updatedAt        DateTime @updatedAt
+  moves            Move[]
+}
+
+model Move {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  moveNumber  Int      // 1, 2, 3... (full moves, not half moves)
+  color       String   // "white" or "black"
+  san         String   // Standard algebraic notation e.g. "e4", "Nf3", "O-O"
+  from        String   // e.g. "e2"
+  to          String   // e.g. "e4"
+  fenAfter    String   // FEN after this move
+  createdAt   DateTime @default(now())
+
+  @@index([gameId])
+}
