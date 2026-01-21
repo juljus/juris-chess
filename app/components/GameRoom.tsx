@@ -37,6 +37,8 @@ export function GameRoom() {
   const [previewFen2, setPreviewFen2] = useState<string | null>(null);
   const [lastMove1, setLastMove1] = useState<{ from: string; to: string } | null>(null);
   const [lastMove2, setLastMove2] = useState<{ from: string; to: string } | null>(null);
+  const [optimisticFen1, setOptimisticFen1] = useState<string | null>(null);
+  const [optimisticFen2, setOptimisticFen2] = useState<string | null>(null);
 
   const playerInfo = session?.user?.email ? getPlayerByEmail(session.user.email) : null;
   const userRole: PlayerRole | null = playerInfo?.role ?? null;
@@ -52,6 +54,9 @@ export function GameRoom() {
       const data = await res.json();
       setGames(data.games);
       setError(null);
+      // Clear optimistic updates when real data arrives
+      setOptimisticFen1(null);
+      setOptimisticFen2(null);
     } catch {
       setError("Failed to load games");
     } finally {
@@ -75,6 +80,26 @@ export function GameRoom() {
   }, [authStatus]);
 
   const handleMove = async (boardNumber: number, from: string, to: string, promotion?: string) => {
+    // Optimistically update the board
+    const game = games.find((g) => g.boardNumber === boardNumber);
+    if (game) {
+      const chess = new Chess(game.fen);
+      try {
+        chess.move({ from, to, promotion });
+        const newFen = chess.fen();
+
+        if (boardNumber === 1) {
+          setOptimisticFen1(newFen);
+          setLastMove1({ from, to });
+        } else {
+          setOptimisticFen2(newFen);
+          setLastMove2({ from, to });
+        }
+      } catch {
+        // Invalid move, don't update optimistically
+      }
+    }
+
     try {
       const res = await fetch("/api/games/move", {
         method: "POST",
@@ -87,15 +112,14 @@ export function GameRoom() {
         throw new Error(data.error || "Failed to make move");
       }
 
-      // Track last move for animation
-      if (boardNumber === 1) {
-        setLastMove1({ from, to });
-      } else {
-        setLastMove2({ from, to });
-      }
-
       fetchGames();
     } catch {
+      // Revert optimistic update on error
+      if (boardNumber === 1) {
+        setOptimisticFen1(null);
+      } else {
+        setOptimisticFen2(null);
+      }
       fetchGames();
     }
   };
@@ -239,6 +263,19 @@ export function GameRoom() {
     return boardNumber === 1 ? PLAYERS.brother.name : PLAYERS.nephew.name;
   };
 
+  const getPlayerNames = (game: Game, orientation: "white" | "black") => {
+    const opponentName = getOpponentName(game.boardNumber);
+    const grandfatherName = PLAYERS.grandfather.name;
+
+    const whiteName = game.grandfatherColor === "white" ? grandfatherName : opponentName;
+    const blackName = game.grandfatherColor === "black" ? grandfatherName : opponentName;
+
+    // Top player is opposite of orientation
+    return orientation === "white"
+      ? { top: blackName, bottom: whiteName }
+      : { top: whiteName, bottom: blackName };
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
       {/* Header */}
@@ -276,6 +313,9 @@ export function GameRoom() {
           {game1 && (() => {
             const isMyBoard = (userBoards as readonly number[]).includes(1);
             const status = getGameStatus(game1);
+            const orientation = getPlayingAs(game1) || game1.grandfatherColor;
+            const displayFen = optimisticFen1 || game1.fen;
+            const playerNames = getPlayerNames(game1, orientation);
             return (
               <div className={`flex flex-col items-center transition-opacity ${isSpectator || !isMyBoard ? "opacity-50" : ""}`}>
                 <div className="w-full max-w-[min(100%,400px)]">
@@ -299,10 +339,15 @@ export function GameRoom() {
                     )}
                   </div>
 
+                  {/* Top player name */}
+                  <div className="flex justify-end mb-1">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{playerNames.top}</span>
+                  </div>
+
                   <div className="relative">
                     <ChessBoard
-                      fen={game1.fen}
-                      orientation={getPlayingAs(game1) || game1.grandfatherColor}
+                      fen={displayFen}
+                      orientation={orientation}
                       canMove={canMoveOnBoard(game1) && !previewFen1}
                       onMove={(from, to, promotion) => handleMove(1, from, to, promotion)}
                       lastMove={lastMove1}
@@ -311,12 +356,17 @@ export function GameRoom() {
                       <div className="absolute inset-0 pointer-events-none">
                         <ChessBoard
                           fen={previewFen1}
-                          orientation={getPlayingAs(game1) || game1.grandfatherColor}
+                          orientation={orientation}
                           canMove={false}
                           onMove={() => {}}
                         />
                       </div>
                     )}
+                  </div>
+
+                  {/* Bottom player name */}
+                  <div className="flex justify-start mt-1 mb-3">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{playerNames.bottom}</span>
                   </div>
 
                   <MoveHistory
@@ -334,6 +384,9 @@ export function GameRoom() {
           {game2 && (() => {
             const isMyBoard = (userBoards as readonly number[]).includes(2);
             const status = getGameStatus(game2);
+            const orientation = getPlayingAs(game2) || game2.grandfatherColor;
+            const displayFen = optimisticFen2 || game2.fen;
+            const playerNames = getPlayerNames(game2, orientation);
             return (
               <div className={`flex flex-col items-center transition-opacity ${isSpectator || !isMyBoard ? "opacity-50" : ""}`}>
                 <div className="w-full max-w-[min(100%,400px)]">
@@ -357,10 +410,15 @@ export function GameRoom() {
                     )}
                   </div>
 
+                  {/* Top player name */}
+                  <div className="flex justify-end mb-1">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{playerNames.top}</span>
+                  </div>
+
                   <div className="relative">
                     <ChessBoard
-                      fen={game2.fen}
-                      orientation={getPlayingAs(game2) || game2.grandfatherColor}
+                      fen={displayFen}
+                      orientation={orientation}
                       canMove={canMoveOnBoard(game2) && !previewFen2}
                       onMove={(from, to, promotion) => handleMove(2, from, to, promotion)}
                       lastMove={lastMove2}
@@ -369,12 +427,17 @@ export function GameRoom() {
                       <div className="absolute inset-0 pointer-events-none">
                         <ChessBoard
                           fen={previewFen2}
-                          orientation={getPlayingAs(game2) || game2.grandfatherColor}
+                          orientation={orientation}
                           canMove={false}
                           onMove={() => {}}
                         />
                       </div>
                     )}
+                  </div>
+
+                  {/* Bottom player name */}
+                  <div className="flex justify-start mt-1 mb-3">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{playerNames.bottom}</span>
                   </div>
 
                   <MoveHistory

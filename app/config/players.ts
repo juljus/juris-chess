@@ -4,7 +4,7 @@
 
 export const PLAYERS = {
   grandfather: {
-    emails: ["juris.putrins@gmail.com"],
+    emails: ["juris.putrins@gmail.com", "juljus@gmail.com"],
     name: "Juris",
     turnText: "Jurise käik",
     boards: [1, 2], // Can play on both boards
