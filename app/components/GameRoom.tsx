@@ -52,11 +52,16 @@ export function GameRoom() {
       const res = await fetch("/api/games");
       if (!res.ok) throw new Error("Failed to fetch games");
       const data = await res.json();
+
+      const game1 = data.games.find((g: Game) => g.boardNumber === 1);
+      const game2 = data.games.find((g: Game) => g.boardNumber === 2);
+
+      // Only clear optimistic updates if server has caught up
+      setOptimisticFen1((prev) => (prev && game1 && game1.fen === prev ? null : prev));
+      setOptimisticFen2((prev) => (prev && game2 && game2.fen === prev ? null : prev));
+
       setGames(data.games);
       setError(null);
-      // Clear optimistic updates when real data arrives
-      setOptimisticFen1(null);
-      setOptimisticFen2(null);
     } catch {
       setError("Failed to load games");
     } finally {
