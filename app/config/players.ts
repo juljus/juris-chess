@@ -4,21 +4,21 @@
 
 export const PLAYERS = {
   grandfather: {
-    email: "mitselek@gmail.com",
+    emails: ["juris.putrins@gmail.com"],
     name: "Juris",
     turnText: "Jurise käik",
     boards: [1, 2], // Can play on both boards
   },
   brother: {
-    email: "august.putrinsh@gmail.com",
+    emails: ["august.putrinsh@gmail.com"],
     name: "August",
     turnText: "Augusti käik",
     boards: [1], // Can only play on board 1
   },
   nephew: {
-    email: "juljus@gmail.com",
-    name: "Salme",
-    turnText: "Salme käik",
+    emails: ["marta.putrins@gmail.com"],
+    name: "Marta",
+    turnText: "Marta käik",
     boards: [2], // Can only play on board 2
   },
 } as const;
@@ -26,8 +26,8 @@ export const PLAYERS = {
 export type PlayerRole = keyof typeof PLAYERS;
 
 export function getPlayerByEmail(email: string): { role: PlayerRole; player: typeof PLAYERS[PlayerRole] } | null {
-  for (const [role, player] of Object.entries(PLAYERS)) {
-    if (player.email.toLowerCase() === email.toLowerCase()) {
+  for (const [role, player] of Object.entries(PLAYERS) as Array<[PlayerRole, typeof PLAYERS[PlayerRole]]>) {
+    if (player.emails.some(e => e.toLowerCase() === email.toLowerCase())) {
       return { role: role as PlayerRole, player };
     }
   }

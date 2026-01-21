@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Family Chess",
-  description: "Grandfather vs the grandkids",
+  title: "Jurise Male",
+  description: "Vanaisa vs lapselapsed",
 };
 
 export default function RootLayout({

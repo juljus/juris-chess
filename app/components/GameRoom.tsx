@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { ChessBoard } from "./ChessBoard";
 import { ResetModal } from "./ResetModal";
 import { MoveHistory } from "./MoveHistory";
+import { TestBoard } from "./TestBoard";
 import { useEffect, useState, useRef } from "react";
 import { PLAYERS, PlayerRole, getPlayerByEmail } from "@/app/config/players";
 import { Chess } from "chess.js";
@@ -34,6 +35,8 @@ export function GameRoom() {
   const [resetBoardNumber, setResetBoardNumber] = useState<number | null>(null);
   const [previewFen1, setPreviewFen1] = useState<string | null>(null);
   const [previewFen2, setPreviewFen2] = useState<string | null>(null);
+  const [lastMove1, setLastMove1] = useState<{ from: string; to: string } | null>(null);
+  const [lastMove2, setLastMove2] = useState<{ from: string; to: string } | null>(null);
 
   const playerInfo = session?.user?.email ? getPlayerByEmail(session.user.email) : null;
   const userRole: PlayerRole | null = playerInfo?.role ?? null;
@@ -82,6 +85,13 @@ export function GameRoom() {
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to make move");
+      }
+
+      // Track last move for animation
+      if (boardNumber === 1) {
+        setLastMove1({ from, to });
+      } else {
+        setLastMove2({ from, to });
       }
 
       fetchGames();
@@ -254,6 +264,13 @@ export function GameRoom() {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Test Board - only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-8 pb-8 border-b border-neutral-200 dark:border-neutral-700">
+            <TestBoard />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Board 1 */}
           {game1 && (() => {
@@ -288,6 +305,7 @@ export function GameRoom() {
                       orientation={getPlayingAs(game1) || game1.grandfatherColor}
                       canMove={canMoveOnBoard(game1) && !previewFen1}
                       onMove={(from, to, promotion) => handleMove(1, from, to, promotion)}
+                      lastMove={lastMove1}
                     />
                     {previewFen1 && (
                       <div className="absolute inset-0 pointer-events-none">
@@ -345,6 +363,7 @@ export function GameRoom() {
                       orientation={getPlayingAs(game2) || game2.grandfatherColor}
                       canMove={canMoveOnBoard(game2) && !previewFen2}
                       onMove={(from, to, promotion) => handleMove(2, from, to, promotion)}
+                      lastMove={lastMove2}
                     />
                     {previewFen2 && (
                       <div className="absolute inset-0 pointer-events-none">
