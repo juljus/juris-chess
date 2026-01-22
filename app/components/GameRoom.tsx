@@ -247,7 +247,7 @@ export function GameRoom() {
 
     // Determine whose turn it is
     const isGrandfathersTurn = game.grandfatherColor === currentTurnColor;
-    const opponent = game.boardNumber === 1 ? PLAYERS.brother : PLAYERS.nephew;
+    const opponent = game.boardNumber === 1 ? PLAYERS.player1 : PLAYERS.player2;
     const turnText = isGrandfathersTurn ? PLAYERS.grandfather.turnText : opponent.turnText;
 
     if (game.status === "checkmate") {
@@ -265,7 +265,7 @@ export function GameRoom() {
   };
 
   const getOpponentName = (boardNumber: number) => {
-    return boardNumber === 1 ? PLAYERS.brother.name : PLAYERS.nephew.name;
+    return boardNumber === 1 ? PLAYERS.player1.name : PLAYERS.player2.name;
   };
 
   const getPlayerNames = (game: Game, orientation: "white" | "black") => {
@@ -334,7 +334,7 @@ export function GameRoom() {
                         {status.highlight ? "Sinu käik!" : status.text}
                       </p>
                     </div>
-                    {userRole === "grandfather" && (
+                    {isMyBoard && (
                       <button
                         onClick={() => setResetBoardNumber(1)}
                         className="text-xs px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
@@ -376,7 +376,7 @@ export function GameRoom() {
 
                   <MoveHistory
                     moves={game1.moves}
-                    canRevert={userRole === "grandfather"}
+                    canRevert={isMyBoard}
                     onHoverMove={setPreviewFen1}
                     onRevert={(moveId) => handleRevert(1, moveId)}
                   />
@@ -405,7 +405,7 @@ export function GameRoom() {
                         {status.highlight ? "Sinu käik!" : status.text}
                       </p>
                     </div>
-                    {userRole === "grandfather" && (
+                    {isMyBoard && (
                       <button
                         onClick={() => setResetBoardNumber(2)}
                         className="text-xs px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
@@ -447,7 +447,7 @@ export function GameRoom() {
 
                   <MoveHistory
                     moves={game2.moves}
-                    canRevert={userRole === "grandfather"}
+                    canRevert={isMyBoard}
                     onHoverMove={setPreviewFen2}
                     onRevert={(moveId) => handleRevert(2, moveId)}
                   />

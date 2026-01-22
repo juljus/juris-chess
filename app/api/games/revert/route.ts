@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/db";
-import { getPlayerByEmail } from "@/app/config/players";
+import { canPlayOnBoard } from "@/app/config/players";
 
 interface RevertOptions {
   boardNumber: number;
@@ -11,17 +11,17 @@ interface RevertOptions {
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  const playerInfo = session?.user?.email ? getPlayerByEmail(session.user.email) : null;
+  const email = session?.user?.email;
 
-  if (!playerInfo) {
+  if (!email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (playerInfo.role !== "grandfather") {
-    return NextResponse.json({ error: "Only grandfather can revert moves" }, { status: 403 });
-  }
-
   const { boardNumber, moveId }: RevertOptions = await request.json();
+
+  if (!canPlayOnBoard(email, boardNumber)) {
+    return NextResponse.json({ error: "Not authorized for this board" }, { status: 403 });
+  }
 
   if (![1, 2].includes(boardNumber)) {
     return NextResponse.json({ error: "Invalid board number" }, { status: 400 });
