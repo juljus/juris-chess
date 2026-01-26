@@ -33,3 +33,14 @@ model Move {
 
   @@index([gameId])
 }
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  email     String
+  endpoint  String   @unique
+  p256dh    String   // Public key
+  auth      String   // Auth secret
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

@@ -5,6 +5,7 @@ import { ChessBoard } from "./ChessBoard";
 import { ResetModal } from "./ResetModal";
 import { MoveHistory } from "./MoveHistory";
 import { TestBoard } from "./TestBoard";
+import { NotificationButton } from "./NotificationButton";
 import { useEffect, useState, useRef } from "react";
 import { PLAYERS, PlayerRole, getPlayerByEmail } from "@/app/config/players";
 import { Chess } from "chess.js";
@@ -295,12 +296,15 @@ export function GameRoom() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => signOut()}
-            className="px-4 py-2 text-sm text-emerald-100 hover:text-white hover:bg-emerald-500/50 rounded-lg transition-colors"
-          >
-            Logi välja
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationButton />
+            <button
+              onClick={() => signOut()}
+              className="px-4 py-2 text-sm text-emerald-100 hover:text-white hover:bg-emerald-500/50 rounded-lg transition-colors"
+            >
+              Logi välja
+            </button>
+          </div>
         </div>
       </header>
 

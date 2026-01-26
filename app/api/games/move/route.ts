@@ -4,6 +4,7 @@ import { authOptions } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/db";
 import { Chess } from "chess.js";
 import { PLAYERS, getPlayerByEmail } from "@/app/config/players";
+import { sendPushToEmails } from "@/app/lib/push";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -98,6 +99,37 @@ export async function POST(request: NextRequest) {
       },
     }),
   ]);
+
+  // Send push notification to the player whose turn it is now
+  if (status === "playing") {
+    const nextTurn = chess.turn() === "w" ? "white" : "black";
+    const isGrandfathersTurn = game.grandfatherColor === nextTurn;
+
+    // Determine which player(s) should receive the notification
+    let recipientEmails: string[];
+    if (isGrandfathersTurn) {
+      recipientEmails = [...PLAYERS.grandfather.emails];
+    } else {
+      // The opponent on this board
+      const opponent = boardNumber === 1 ? PLAYERS.player1 : PLAYERS.player2;
+      recipientEmails = [...opponent.emails];
+    }
+
+    // Get the name of the player who made the move
+    const moverName = userRole === "grandfather"
+      ? PLAYERS.grandfather.name
+      : (boardNumber === 1 ? PLAYERS.player1.name : PLAYERS.player2.name);
+
+    // Send notification (fire and forget)
+    sendPushToEmails(recipientEmails, {
+      title: "Jurise Male",
+      body: `${moverName} tegi käigu ${move.san}. Sinu käik!`,
+      tag: `board-${boardNumber}`,
+      url: "/",
+    }).catch(() => {
+      // Ignore notification errors
+    });
+  }
 
   return NextResponse.json({ game: updatedGame });
 }
